@@ -85,8 +85,10 @@ public final class DhOverworldImporter {
                                         int index = ((relY & 15) << 8) | (lz << 4) | lx;
                                         long old = sectionData[sy][index];
                                         sectionData[sy][index] = mapped;
-                                        if (old == 0 && ((mapped >>> 27) & 0xfffff) != 0) nonAir[sy]++;
-                                        else if (old != 0 && ((mapped >>> 27) & 0xfffff) == 0) nonAir[sy]--;
+                                        int oldBlock = (int) ((old >>> 27) & 0xfffff);
+                                        int newBlock = (int) ((mapped >>> 27) & 0xfffff);
+                                        if (oldBlock == 0 && newBlock != 0) nonAir[sy]++;
+                                        else if (oldBlock != 0 && newBlock == 0) nonAir[sy]--;
                                     }
                                 }
                             }
