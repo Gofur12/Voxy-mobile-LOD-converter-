@@ -20,4 +20,4 @@ Voxy integration is reflective to avoid a compile-time dependency on Voxy source
 - Validate counts, mapping indexes, compressed frame sizes, and blob boundaries before allocating or inserting.
 
 ## Platform notes
-SQLite JDBC and Zstandard JNI are provisional desktop dependencies. Android/Zalith native library loading has not been verified and must be tested on the target Android ABI before the add-on is labelled mobile-compatible.
+SQLite uses Android's built-in read-only database API when present, with JDBC on desktop. Zstandard uses zstd-jni first and reflectively falls back to Voxy/Minecraft's LWJGL Zstd module. Android/Zalith runtime behavior still requires an on-device test before the add-on is labelled mobile-compatible.
