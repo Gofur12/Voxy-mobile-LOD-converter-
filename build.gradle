@@ -10,6 +10,7 @@ base { archivesName = project.archives_base_name }
 
 repositories {
     maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://maven.terraformersmc.com/releases/' }
     mavenCentral()
 }
 
