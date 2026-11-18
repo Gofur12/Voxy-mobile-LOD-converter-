@@ -3,6 +3,7 @@ package dev.gofur12.lodconverter.voxy;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
