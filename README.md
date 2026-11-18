@@ -32,7 +32,7 @@ The importer reads only `DetailLevel=0`, `DataFormatVersion=2`, `CompressionMode
 - Overworld importer implementation and decoder unit tests are committed.
 - Voxy integration uses reflective access to the existing runtime classes (`WorldIdentifier`, `VoxelizedSection`, `WorldVoxilizedSectionMipper`, and `WorldUpdater`). No Voxy classes are copied into this add-on.
 - The build workflow is configured, but a successful CI build and in-game import have not yet been verified. Do not treat this as a tested release until both pass.
-- SQLite JDBC and Zstandard JNI are currently bundled for desktop JVM testing. Android/Zalith native-library compatibility is **not verified**; a successful desktop build does not establish Android support.
+- SQLite access uses Android's built-in read-only SQLite API when running on Android, with SQLite JDBC as the desktop fallback. Zstandard tries zstd-jni first and falls back to Voxy/Minecraft's LWJGL Zstd module when available. Android/Zalith runtime compatibility is still **not verified on-device**; a successful desktop build does not establish Android support.
 - DIM-1 / DIM1-style dimension databases are not imported yet; this first pass is Overworld only.
 
 ## Build
