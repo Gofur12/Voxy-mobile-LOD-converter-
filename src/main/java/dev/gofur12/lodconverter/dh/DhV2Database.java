@@ -12,7 +12,7 @@ public final class DhV2Database implements AutoCloseable {
     public DhV2Database(Path path) throws Exception {
         Path file = path.toAbsolutePath().normalize();
         if (!Files.isRegularFile(file)) throw new IOException("SQLite file not found: " + file);
-        this.connection = DriverManager.getConnection("jdbc:sqlite:" + file + "?mode=ro");
+        this.connection = DriverManager.getConnection("jdbc:sqlite:file:" + file + "?mode=ro");
         try (Statement s = connection.createStatement(); ResultSet rs = s.executeQuery("PRAGMA integrity_check")) {
             if (!rs.next() || !"ok".equalsIgnoreCase(rs.getString(1))) throw new IOException("SQLite integrity check failed");
         }
