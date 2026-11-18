@@ -60,6 +60,21 @@ class DhV2CodecTest {
                 emptyColumns(), 0, 1, 0, 1));
     }
 
+    @Test
+    void rejectsVarIntOverflowInsteadOfWrapping() {
+        byte[] overflow = new byte[]{(byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, 0x08};
+        assertThrows(Exception.class, () -> DhV2Codec.readColumns(
+                Zstd.compress(overflow), emptyColumns(), 0, 1, 0, 1));
+    }
+
+    @Test
+    void rejectsZeroHeightDataPoints() {
+        // One column, one mapping ID, then an invalid zero height.
+        byte[] raw = new byte[]{1, 0, 0};
+        assertThrows(Exception.class, () -> DhV2Codec.readColumns(
+                Zstd.compress(raw), emptyColumns(), 0, 1, 0, 1));
+    }
+
     @SuppressWarnings("unchecked")
     private static List<DhV2Codec.Point>[] emptyColumns() {
         List<DhV2Codec.Point>[] columns = (List<DhV2Codec.Point>[]) new List<?>[4096];
