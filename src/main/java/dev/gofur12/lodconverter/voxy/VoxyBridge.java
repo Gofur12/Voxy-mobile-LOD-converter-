@@ -123,6 +123,7 @@ public final class VoxyBridge {
     }
 
     public static long mapping(int light, int blockId, int biomeId) {
+        if (blockId == 0) return ((long) light & 0xffL) << 56;
         return ((long) light & 0xffL) << 56 | ((long) biomeId & 0x1ffL) << 47 | ((long) blockId & 0xfffffL) << 27;
     }
 }
