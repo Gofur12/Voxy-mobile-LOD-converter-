@@ -5,12 +5,10 @@ import dev.gofur12.lodconverter.dh.DhOverworldImporter;
 import dev.gofur12.lodconverter.inspect.DhDatabaseInspector;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.client.option.KeyBinding;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
-import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
 
@@ -18,20 +16,19 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 public final class LodConverterClient implements ClientModInitializer {
-    private static KeyBinding openScreenKey;
-
     @Override
     public void onInitializeClient() {
-        openScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-            "key.voxy_mobile_lod_converter.open",
-            InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_F10,
-            "category.voxy_mobile_lod_converter"
-        ));
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (openScreenKey.wasPressed()) {
-                if (client.currentScreen instanceof DhConverterScreen) client.setScreen(null);
-                else client.setScreen(new DhConverterScreen(client.currentScreen));
+        // Add a persistent entry point directly to Minecraft's Video Settings.
+        // This avoids relying on launcher/mobile keyboard keybind delivery.
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            if (screen instanceof VideoOptionsScreen) {
+                int buttonWidth = Math.min(190, scaledWidth - 12);
+                int x = (scaledWidth - buttonWidth) / 2;
+                int y = Math.max(4, scaledHeight - 54);
+                screen.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("Voxy LOD Converter"),
+                    button -> client.setScreen(new DhConverterScreen(screen))
+                ).dimensions(x, y, buttonWidth, 20).build());
             }
         });
 
