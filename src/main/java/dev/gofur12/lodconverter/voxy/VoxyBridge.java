@@ -72,6 +72,10 @@ public final class VoxyBridge {
         Identifier blockIdentifier = Identifier.tryParse(blockName);
         if (blockIdentifier == null) return net.minecraft.block.Blocks.AIR.getDefaultState();
         Block block = Registries.BLOCK.get(blockIdentifier);
+        if (!blockIdentifier.equals(Registries.BLOCK.getId(block))) {
+            throw new IllegalStateException("Missing block from source LOD data: " + blockIdentifier
+                    + " (install the matching content mod before importing)");
+        }
         BlockState state = block.getDefaultState();
         if (marker < 0) return state;
         String tail = serial.substring(marker + 7);
@@ -83,7 +87,8 @@ public final class VoxyBridge {
             String[] pair = tail.substring(pos + 1, end).split(":", 2);
             if (pair.length != 2) throw new IllegalArgumentException("Malformed property: " + serial);
             Property<?> property = block.getStateManager().getProperty(pair[0]);
-            if (property != null) state = applyProperty(state, property, pair[1]);
+            if (property == null) throw new IllegalArgumentException("Unknown block-state property in DH mapping: " + pair[0]);
+            state = applyProperty(state, property, pair[1]);
             pos = end + 1;
         }
         return state;
@@ -91,7 +96,9 @@ public final class VoxyBridge {
 
     private static <T extends Comparable<T>> BlockState applyProperty(BlockState state, Property<T> property, String value) {
         Optional<T> parsed = property.parse(value);
-        return parsed.map(t -> state.with(property, t)).orElse(state);
+        if (parsed.isEmpty()) throw new IllegalArgumentException("Invalid value for block-state property "
+                + property.getName() + ": " + value);
+        return state.with(property, parsed.get());
     }
 
     public void insert(int sectionX, int sectionY, int sectionZ, long[] data, int nonAir) throws Exception {
