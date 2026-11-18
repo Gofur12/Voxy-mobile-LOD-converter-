@@ -19,12 +19,26 @@ public final class DhV2Database implements AutoCloseable {
 
         Object androidDb = null;
         Connection jdbc = null;
-        if (isAndroidRuntime()) {
-            androidDb = openAndroidDatabase(file);
-            validateAndroidDatabase(androidDb);
-        } else {
-            jdbc = DriverManager.getConnection("jdbc:sqlite:file:" + file + "?mode=ro");
-            validateJdbcDatabase(jdbc);
+        try {
+            if (isAndroidRuntime()) {
+                androidDb = openAndroidDatabase(file);
+                validateAndroidDatabase(androidDb);
+            } else {
+                // Use a URI-encoded absolute path so spaces, '#', and other URI
+                // characters in Android/desktop world-folder names are not parsed
+                // as JDBC URL syntax.
+                String sqliteUri = file.toUri().toString();
+                jdbc = DriverManager.getConnection("jdbc:sqlite:" + sqliteUri + "?mode=ro");
+                validateJdbcDatabase(jdbc);
+            }
+        } catch (Exception failure) {
+            try {
+                if (androidDb != null) androidDb.getClass().getMethod("close").invoke(androidDb);
+                if (jdbc != null) jdbc.close();
+            } catch (Exception closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+            throw failure;
         }
         this.androidDatabase = androidDb;
         this.connection = jdbc;
