@@ -34,6 +34,26 @@ class DhV2CodecTest {
     }
 
     @Test
+    void keepsPredictiveBottomAcrossAdjacentColumns() throws Exception {
+        // Two columns, one point each. The second bottom is predicted from
+        // the first point, matching FullDataSourceV2DTO's global predictor.
+        byte[] raw = new byte[]{1, 1, 1, 0, 5, 3, 30};
+        List<DhV2Codec.Point>[] columns = emptyColumns();
+        DhV2Codec.readColumns(Zstd.compress(raw), columns, 0, 1, 0, 2);
+        assertEquals(new DhV2Codec.Point(0, 5, 10, 0), columns[0].get(0));
+        assertEquals(new DhV2Codec.Point(0, 3, 7, 0), columns[1].get(0));
+    }
+
+    @Test
+    void acceptsEmptyMappingTable() throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(bytes)) {
+            out.writeInt(0);
+        }
+        assertTrue(DhV2Codec.readMapping(Zstd.compress(bytes.toByteArray())).isEmpty());
+    }
+
+    @Test
     void rejectsOverlongVarintAndTruncatedData() {
         assertThrows(Exception.class, () -> DhV2Codec.readColumns(
                 Zstd.compress(new byte[]{(byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, (byte) 0x80, 0}),
