@@ -9,6 +9,12 @@ Standalone Fabric client add-on for importing Distant Horizons FullData V2 data 
 - Distant Horizons SQLite FullData format V2, Zstandard compression mode 4
 - Voxy installed separately (runtime integration is reflective)
 
+## In-game GUI
+
+Press **K** in-game to open the converter screen. Browse folders, select a `.sqlite` / `.db` file, inspect it, then press **Impor ke Voxy**. The screen includes a built-in folder browser so the database path does not need to be typed as a command. On Android, folder access still depends on Zalith / Android storage permissions.
+
+The original commands remain available for advanced use.
+
 ## In-game commands
 
 Inspect the database without changing it:
