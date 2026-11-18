@@ -25,12 +25,13 @@ public final class LodConverterClient implements ClientModInitializer {
         openScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.voxy_mobile_lod_converter.open",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_K,
+            GLFW.GLFW_KEY_F10,
             "category.voxy_mobile_lod_converter"
         ));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openScreenKey.wasPressed()) {
-                client.setScreen(new DhConverterScreen(client.currentScreen));
+                if (client.currentScreen instanceof DhConverterScreen) client.setScreen(null);
+                else client.setScreen(new DhConverterScreen(client.currentScreen));
             }
         });
 
