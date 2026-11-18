@@ -119,7 +119,11 @@ public final class VoxyBridge {
         if (instance == null) return;
         java.util.function.BooleanSupplier limiter = (java.util.function.BooleanSupplier)
                 instance.getClass().getField("savingServiceRateLimiter").get(instance);
-        while (!limiter.getAsBoolean()) Thread.sleep(10L);
+        long deadline = System.nanoTime() + 120_000_000_000L;
+        while (!limiter.getAsBoolean()) {
+            if (System.nanoTime() > deadline) throw new IllegalStateException("Voxy save queue did not drain within 120 seconds");
+            Thread.sleep(10L);
+        }
     }
 
     public void acquireRef() throws Exception {
