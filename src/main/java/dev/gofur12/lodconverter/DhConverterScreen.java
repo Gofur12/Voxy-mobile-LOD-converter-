@@ -41,8 +41,7 @@ public final class DhConverterScreen extends Screen {
 
         if (directory == null) {
             Path gameDir = client.runDirectory.toPath().toAbsolutePath().normalize();
-            Path androidStorage = Path.of("/storage/emulated/0");
-            directory = Files.isDirectory(androidStorage) ? androidStorage : gameDir;
+            directory = gameDir;
         }
 
         if (entries.isEmpty()) refreshEntries();
