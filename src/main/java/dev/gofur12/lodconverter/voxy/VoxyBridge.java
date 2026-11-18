@@ -1,7 +1,6 @@
 package dev.gofur12.lodconverter.voxy;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.registry.Registry;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 import net.minecraft.block.Block;
@@ -13,10 +12,7 @@ import net.minecraft.registry.entry.RegistryEntry;
 import java.lang.reflect.*;
 import java.util.*;
 
-/**
- * Runtime-only bridge to Voxy. It does not compile against, copy, patch, or modify Voxy classes.
- * The bridge resolves the running world's Voxy engine and calls its section update pipeline.
- */
+/** Runtime-only reflective bridge. No Voxy source or jar is bundled or modified. */
 public final class VoxyBridge {
     private final Object engine;
     private final Object mapper;
@@ -40,21 +36,32 @@ public final class VoxyBridge {
         var world = MinecraftClient.getInstance().world;
         if (world == null) throw new IllegalStateException("Join a world first");
         Class<?> identifier = Class.forName("me.cortex.voxy.commonImpl.WorldIdentifier");
-        Object engine = identifier.getMethod("ofEngine", net.minecraft.world.World.class).invoke(null, world);
+        Method factory = Arrays.stream(identifier.getMethods())
+                .filter(m -> Modifier.isStatic(m.getModifiers()) && m.getName().equals("ofEngine") && m.getParameterCount() == 1)
+                .filter(m -> m.getParameterTypes()[0].isAssignableFrom(world.getClass()))
+                .findFirst().orElseThrow(() -> new NoSuchMethodException("Voxy WorldIdentifier.ofEngine(Level)"));
+        Object engine = factory.invoke(null, world);
         if (engine == null) throw new IllegalStateException("Voxy has no active engine for this world");
         return new VoxyBridge(engine);
     }
 
     public int blockId(String serial) throws Exception {
         BlockState state = resolveBlockState(serial);
-        return (int) mapper.getClass().getMethod("getIdForBlockState", BlockState.class).invoke(mapper, state);
+        Method method = Arrays.stream(mapper.getClass().getMethods())
+                .filter(m -> m.getName().equals("getIdForBlockState") && m.getParameterCount() == 1)
+                .findFirst().orElseThrow(() -> new NoSuchMethodException("Voxy Mapper.getIdForBlockState"));
+        return ((Number) method.invoke(mapper, state)).intValue();
     }
 
     public int biomeId(String biomeName) throws Exception {
         Identifier id = Identifier.tryParse(biomeName);
-        RegistryEntry<Biome> biome = Registries.BIOME.getEntry(Registries.BIOME.get(id)
-                .orElse(Registries.BIOME.get(Identifier.ofVanilla("plains"))));
-        return (int) mapper.getClass().getMethod("getIdForBiome", RegistryEntry.class).invoke(mapper, biome);
+        Biome biome = id == null ? null : Registries.BIOME.get(id);
+        if (biome == null) biome = Registries.BIOME.get(Identifier.of("minecraft", "plains"));
+        RegistryEntry<Biome> entry = Registries.BIOME.getEntry(biome);
+        Method method = Arrays.stream(mapper.getClass().getMethods())
+                .filter(m -> m.getName().equals("getIdForBiome") && m.getParameterCount() == 1)
+                .findFirst().orElseThrow(() -> new NoSuchMethodException("Voxy Mapper.getIdForBiome"));
+        return ((Number) method.invoke(mapper, entry)).intValue();
     }
 
     private static BlockState resolveBlockState(String serial) {
@@ -62,7 +69,9 @@ public final class VoxyBridge {
             return net.minecraft.block.Blocks.AIR.getDefaultState();
         int marker = serial.indexOf("_STATE_");
         String blockName = marker < 0 ? serial : serial.substring(0, marker);
-        Block block = Registries.BLOCK.get(Identifier.tryParse(blockName));
+        Identifier blockIdentifier = Identifier.tryParse(blockName);
+        if (blockIdentifier == null) return net.minecraft.block.Blocks.AIR.getDefaultState();
+        Block block = Registries.BLOCK.get(blockIdentifier);
         BlockState state = block.getDefaultState();
         if (marker < 0) return state;
         String tail = serial.substring(marker + 7);
@@ -89,12 +98,23 @@ public final class VoxyBridge {
         System.arraycopy(data, 0, sectionData, 0, Math.min(data.length, sectionData.length));
         voxelizedSection.getField("lvl0NonAirCount").setInt(section, nonAir);
         voxelizedSection.getMethod("setPosition", int.class, int.class, int.class).invoke(section, sectionX, sectionY, sectionZ);
-        mipper.getMethod("mipSection", voxelizedSection, mapper.getClass()).invoke(null, section, mapper);
-        updater.getMethod("insertUpdate", engine.getClass(), voxelizedSection).invoke(null, engine, section);
+        invokeStatic(mipper, "mipSection", section, mapper);
+        invokeStatic(updater, "insertUpdate", engine, section);
         Arrays.fill(sectionData, 0L);
     }
 
-    public static long mapping(long light, int blockId, int biomeId) {
-        return (light & 0xffL) << 56 | ((long) biomeId & 0x1ffL) << 47 | ((long) blockId & 0xfffffL) << 27;
+    private static Object invokeStatic(Class<?> owner, String name, Object... args) throws Exception {
+        Method method = Arrays.stream(owner.getMethods())
+                .filter(m -> Modifier.isStatic(m.getModifiers()) && m.getName().equals(name) && m.getParameterCount() == args.length)
+                .filter(m -> {
+                    Class<?>[] p = m.getParameterTypes();
+                    for (int i = 0; i < p.length; i++) if (!p[i].isAssignableFrom(args[i].getClass())) return false;
+                    return true;
+                }).findFirst().orElseThrow(() -> new NoSuchMethodException(owner.getName() + "." + name));
+        return method.invoke(null, args);
+    }
+
+    public static long mapping(int light, int blockId, int biomeId) {
+        return ((long) light & 0xffL) << 56 | ((long) biomeId & 0x1ffL) << 47 | ((long) blockId & 0xfffffL) << 27;
     }
 }
