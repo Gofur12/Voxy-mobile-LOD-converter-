@@ -56,7 +56,7 @@ public final class VoxyBridge {
     public int biomeId(String biomeName) throws Exception {
         Identifier id = Identifier.tryParse(biomeName);
         Biome biome = id == null ? null : Registries.BIOME.get(id);
-        if (biome == null) biome = Registries.BIOME.get(Identifier.of("minecraft", "plains"));
+        if (biome == null) biome = Registries.BIOME.get(new Identifier("minecraft", "plains"));
         RegistryEntry<Biome> entry = Registries.BIOME.getEntry(biome);
         Method method = Arrays.stream(mapper.getClass().getMethods())
                 .filter(m -> m.getName().equals("getIdForBiome") && m.getParameterCount() == 1)
