@@ -8,8 +8,10 @@
   "contact": { "sources": "https://github.com/Gofur12/Voxy-mobile-LOD-converter-" },
   "license": "MIT",
   "environment": "client",
-  "entrypoints": { "client": ["dev.gofur12.lodconverter.LodConverterClient"] },
-  "mixins": ["voxy_mobile_lod_converter.mixins.json"],
+  "entrypoints": {
+    "client": ["dev.gofur12.lodconverter.LodConverterClient"],
+    "modmenu": ["dev.gofur12.lodconverter.LodConverterModMenu"]
+  },
   "depends": {
     "fabricloader": ">=0.15.0",
     "minecraft": "1.20.1",
