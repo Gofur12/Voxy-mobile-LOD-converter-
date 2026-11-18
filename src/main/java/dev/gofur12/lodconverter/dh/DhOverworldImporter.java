@@ -3,6 +3,7 @@ package dev.gofur12.lodconverter.dh;
 import dev.gofur12.lodconverter.voxy.VoxyBridge;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
+import net.minecraft.world.World;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -35,6 +36,9 @@ public final class DhOverworldImporter {
         MinecraftClient client = MinecraftClient.getInstance();
         var world = client.world;
         if (world == null) throw new IllegalStateException("Join the target world before importing");
+        if (!World.OVERWORLD.equals(world.getRegistryKey())) {
+            throw new IllegalStateException("This database is the Overworld. Join the Overworld before importing so Nether/End LOD storage is not overwritten.");
+        }
         VoxyBridge voxy = VoxyBridge.currentWorld();
         voxy.acquireRef();
         try {
