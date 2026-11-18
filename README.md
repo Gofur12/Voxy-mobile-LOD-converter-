@@ -1,35 +1,46 @@
 # Voxy Mobile LOD Converter
 
-A standalone Fabric client mod project. It does **not** contain, fork, patch, or modify Voxy source code.
+Standalone Fabric client add-on for importing Distant Horizons FullData V2 data into the currently active Voxy world. This repository does not bundle, fork, patch, or modify Voxy.
 
 ## Target
 - Minecraft Java 1.20.1
 - Fabric Loader / Fabric API
 - Java 17
-- Distant Horizons 3.3.3 SQLite databases (initial target: Overworld)
+- Distant Horizons SQLite FullData format V2, Zstandard compression mode 4
+- Voxy installed separately (runtime integration is reflective)
 
-## Current status
-This is the independent project bootstrap. The first in-game command is a **read-only database inspector**:
+## In-game commands
 
+Inspect the database without changing it:
+
+```text
+/dhconvert inspect <absolute-path-to-DistantHorizons.sqlite>
 ```
-/dhconvert inspect <absolute-path-to-sqlite>
+
+Import Overworld LODs into the currently open Voxy world:
+
+```text
+/dhconvert import <absolute-path-to-DistantHorizons.sqlite>
 ```
 
-It checks SQLite integrity and reports table names and the `FullData` columns. It never writes to the source database.
+The importer reads only `DetailLevel=0`, `DataFormatVersion=2`, `CompressionMode=4` rows. It decodes the 62x62 inner columns and the four adjacency strips, resolves the DH block/biome mapping against the active Minecraft registries, and inserts 16x16x16 sections through Voxy's runtime section update pipeline. Voxy's normal mip propagation then builds parent LOD levels.
 
-## Important limitation
-The inspector is not yet a converter. The next implementation stages are:
-1. Validate the exact DH 3.3.3 V2 metadata and compressed payloads.
-2. Decode V2 region and adjacency data with bounds checks.
-3. Implement a Voxy storage adapter using only a documented/stable external integration point.
-4. Test the produced data against a real Voxy 1.20.1 instance before publishing a usable conversion release.
+**Important:** run the import in the matching destination world. Back up the world before testing. Keep the world open until the chat reports completion. The source SQLite database is opened read-only.
 
-SQLite JDBC and Zstandard JNI are currently declared as bundled runtime dependencies for desktop development. Android/Zalith compatibility is **not verified**; native library loading must be validated on-device before claiming support.
+## Current limitations / verification status
+
+- Overworld importer implementation and decoder unit tests are committed.
+- Voxy integration uses reflective access to the existing runtime classes (`WorldIdentifier`, `VoxelizedSection`, `WorldVoxilizedSectionMipper`, and `WorldUpdater`). No Voxy classes are copied into this add-on.
+- The build workflow is configured, but a successful CI build and in-game import have not yet been verified. Do not treat this as a tested release until both pass.
+- SQLite JDBC and Zstandard JNI are currently bundled for desktop JVM testing. Android/Zalith native-library compatibility is **not verified**; a successful desktop build does not establish Android support.
+- DIM-1 / DIM1-style dimension databases are not imported yet; this first pass is Overworld only.
 
 ## Build
+
 Use JDK 17 and Gradle:
+
 ```sh
-gradle build
+gradle --no-daemon test build
 ```
 
-The built mod jar is in `build/libs/`.
+The mod JAR is written to `build/libs/`.
