@@ -65,7 +65,7 @@ public final class DhV2Codec {
     public static List<Mapping> readMapping(byte[] compressed) throws IOException {
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(decompress(compressed)))) {
             int count = in.readInt();
-            if (count < 1 || count > 1_000_000) throw new IOException("Invalid mapping count: " + count);
+            if (count < 0 || count > 1_000_000) throw new IOException("Invalid mapping count: " + count);
             List<Mapping> result = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 String value = in.readUTF();
@@ -111,7 +111,7 @@ public final class DhV2Codec {
             for (int j = 0; j < column.size(); j++) {
                 Point p = column.get(j);
                 int height = c.varInt();
-                if (height > 65535) throw new IOException("Invalid point height");
+                if (height < 0 || height > 4095) throw new IOException("Invalid point height: " + height);
                 column.set(j, new Point(p.mappingId(), height, 0, 0));
             }
         }
@@ -123,7 +123,7 @@ public final class DhV2Codec {
                 int expected = previousBottom - p.height();
                 int bottom = expected;
                 if ((flags[i][j] & 1) != 0) bottom += unZigZag(c.varInt());
-                if (bottom < 0 || bottom > 65535) throw new IOException("DH point bottom outside supported range: " + bottom);
+                if (bottom < 0 || bottom > 4095) throw new IOException("DH point bottom outside 12-bit range: " + bottom);
                 column.set(j, new Point(p.mappingId(), p.height(), bottom, 0));
                 previousBottom = bottom;
             }
@@ -155,7 +155,10 @@ public final class DhV2Codec {
             for (int shift = 0; shift < 35; shift += 7) {
                 int b = byteValue();
                 value |= (b & 0x7f) << shift;
-                if ((b & 0x80) == 0) return value;
+                if ((b & 0x80) == 0) {
+                    if (value < 0) throw new IOException("Negative DH VarInt");
+                    return value;
+                }
             }
             throw new IOException("Overlong DH VarInt");
         }
