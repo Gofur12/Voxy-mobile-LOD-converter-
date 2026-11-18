@@ -48,6 +48,7 @@ public final class DhOverworldImporter {
             long completed = 0;
             long total = rows.size();
             for (int[] position : rows) {
+                if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                 DhV2Database.Row row = db.readRow(position[0], position[1]);
                 List<DhV2Codec.Point>[] columns = (List<DhV2Codec.Point>[]) new List<?>[DhV2Codec.COLUMN_COUNT];
                 for (int i = 0; i < columns.length; i++) columns[i] = new ArrayList<>();
