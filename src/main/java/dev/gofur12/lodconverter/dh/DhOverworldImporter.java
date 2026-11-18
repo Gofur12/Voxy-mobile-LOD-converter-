@@ -72,14 +72,18 @@ public final class DhOverworldImporter {
                     voxyMappings[i] = VoxyBridge.mapping(0, blockId, biomeId);
                 }
 
+                // Keep a single bounded scratch allocation per DH row instead of allocating
+                // section arrays 16 times for every row. Every chunk is cleared before reuse.
+                long[][] sectionData = new long[sectionCount][4096];
+                int[] nonAir = new int[sectionCount];
                 for (int chunkX = 0; chunkX < 4; chunkX++) {
                     for (int chunkZ = 0; chunkZ < 4; chunkZ++) {
                         if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Import interrupted");
                         if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                         voxy.awaitCapacity();
                         if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
-                        long[][] sectionData = new long[sectionCount][4096];
-                        int[] nonAir = new int[sectionCount];
+                        for (long[] section : sectionData) Arrays.fill(section, 0L);
+                        Arrays.fill(nonAir, 0);
                         for (int lx = 0; lx < 16; lx++) {
                             int tileX = chunkX * 16 + lx;
                             for (int lz = 0; lz < 16; lz++) {
