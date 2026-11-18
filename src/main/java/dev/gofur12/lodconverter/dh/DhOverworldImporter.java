@@ -52,6 +52,7 @@ public final class DhOverworldImporter {
             long completed = 0;
             long total = rows.size();
             for (int[] position : rows) {
+                if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Import interrupted");
                 if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                 DhV2Database.Row row = db.readRow(position[0], position[1]);
                 List<DhV2Codec.Point>[] columns = (List<DhV2Codec.Point>[]) new List<?>[DhV2Codec.COLUMN_COUNT];
@@ -73,7 +74,10 @@ public final class DhOverworldImporter {
 
                 for (int chunkX = 0; chunkX < 4; chunkX++) {
                     for (int chunkZ = 0; chunkZ < 4; chunkZ++) {
+                        if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Import interrupted");
+                        if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                         voxy.awaitCapacity();
+                        if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                         long[][] sectionData = new long[sectionCount][4096];
                         int[] nonAir = new int[sectionCount];
                         for (int lx = 0; lx < 16; lx++) {
@@ -102,6 +106,7 @@ public final class DhOverworldImporter {
                             }
                         }
                         for (int sy = 0; sy < sectionCount; sy++) {
+                            if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                             voxy.insert(row.x() * 4 + chunkX, (bottomY >> 4) + sy,
                                     row.z() * 4 + chunkZ, sectionData[sy], nonAir[sy]);
                         }
