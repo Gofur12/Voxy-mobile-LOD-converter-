@@ -13,7 +13,7 @@ public final class DhDatabaseInspector {
     public static Report inspect(Path input) throws Exception {
         Path file = input.toAbsolutePath().normalize();
         if (!Files.isRegularFile(file)) throw new IllegalArgumentException("File not found: " + file);
-        String url = "jdbc:sqlite:" + file + "?mode=ro";
+        String url = "jdbc:sqlite:file:" + file + "?mode=ro";
         try (Connection connection = DriverManager.getConnection(url)) {
             String integrity;
             try (Statement statement = connection.createStatement();
