@@ -114,6 +114,14 @@ public final class VoxyBridge {
         return method.invoke(null, args);
     }
 
+    public void awaitCapacity() throws Exception {
+        Object instance = engine.getClass().getField("instanceIn").get(engine);
+        if (instance == null) return;
+        java.util.function.BooleanSupplier limiter = (java.util.function.BooleanSupplier)
+                instance.getClass().getField("savingServiceRateLimiter").get(instance);
+        while (!limiter.getAsBoolean()) Thread.sleep(10L);
+    }
+
     public void acquireRef() throws Exception {
         engine.getClass().getMethod("acquireRef").invoke(engine);
     }
