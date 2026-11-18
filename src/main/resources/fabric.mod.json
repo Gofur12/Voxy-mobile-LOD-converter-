@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "voxy_mobile_lod_converter",
+  "version": "${version}",
+  "name": "Voxy Mobile LOD Converter",
+  "description": "Standalone importer utilities for Distant Horizons 3.3.3 LOD databases.",
+  "authors": ["Gofur12"],
+  "contact": { "sources": "https://github.com/Gofur12/Voxy-mobile-LOD-converter-" },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.gofur12.lodconverter.LodConverterClient"] },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}
