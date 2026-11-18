@@ -80,7 +80,6 @@ public final class DhOverworldImporter {
                     for (int chunkZ = 0; chunkZ < 4; chunkZ++) {
                         if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Import interrupted");
                         if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
-                        voxy.awaitCapacity();
                         if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                         for (long[] section : sectionData) Arrays.fill(section, 0L);
                         Arrays.fill(nonAir, 0);
@@ -110,6 +109,11 @@ public final class DhOverworldImporter {
                             }
                         }
                         for (int sy = 0; sy < sectionCount; sy++) {
+                            if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Import interrupted");
+                            if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
+                            // Apply back-pressure for each queued Voxy section, not just once
+                            // per chunk, so tall worlds cannot flood the asynchronous save queue.
+                            voxy.awaitCapacity();
                             if (client.world != world) throw new IllegalStateException("World changed during import; stopping safely");
                             voxy.insert(row.x() * 4 + chunkX, (bottomY >> 4) + sy,
                                     row.z() * 4 + chunkZ, sectionData[sy], nonAir[sy]);
