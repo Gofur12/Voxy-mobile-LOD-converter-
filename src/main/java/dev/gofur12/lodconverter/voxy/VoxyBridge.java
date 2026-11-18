@@ -19,8 +19,6 @@ public final class VoxyBridge {
     private final Class<?> voxelizedSection;
     private final Class<?> updater;
     private final Class<?> mipper;
-    private final Object section;
-    private final long[] sectionData;
 
     private VoxyBridge(Object engine) throws Exception {
         this.engine = engine;
@@ -28,8 +26,6 @@ public final class VoxyBridge {
         this.voxelizedSection = Class.forName("me.cortex.voxy.common.voxelization.VoxelizedSection");
         this.updater = Class.forName("me.cortex.voxy.common.world.WorldUpdater");
         this.mipper = Class.forName("me.cortex.voxy.common.voxelization.WorldVoxilizedSectionMipper");
-        this.section = voxelizedSection.getMethod("createEmpty").invoke(null);
-        this.sectionData = (long[]) voxelizedSection.getField("section").get(section);
     }
 
     public static VoxyBridge currentWorld() throws Exception {
@@ -95,12 +91,15 @@ public final class VoxyBridge {
     }
 
     public void insert(int sectionX, int sectionY, int sectionZ, long[] data, int nonAir) throws Exception {
+        // Voxy's updater may retain the section while its asynchronous save queue is
+        // processing it. Never reuse or clear a section buffer after submission.
+        Object section = voxelizedSection.getMethod("createEmpty").invoke(null);
+        long[] sectionData = (long[]) voxelizedSection.getField("section").get(section);
         System.arraycopy(data, 0, sectionData, 0, Math.min(data.length, sectionData.length));
         voxelizedSection.getField("lvl0NonAirCount").setInt(section, nonAir);
         voxelizedSection.getMethod("setPosition", int.class, int.class, int.class).invoke(section, sectionX, sectionY, sectionZ);
         invokeStatic(mipper, "mipSection", section, mapper);
         invokeStatic(updater, "insertUpdate", engine, section);
-        Arrays.fill(sectionData, 0L);
     }
 
     private static Object invokeStatic(Class<?> owner, String name, Object... args) throws Exception {
