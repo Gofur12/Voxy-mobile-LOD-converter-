@@ -1,7 +1,8 @@
 package dev.gofur12.lodconverter.voxy;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -56,12 +57,13 @@ public final class VoxyBridge {
     public int biomeId(String biomeName) throws Exception {
         Identifier id = Identifier.tryParse(biomeName);
         if (id == null) throw new IllegalArgumentException("Invalid biome identifier in DH mapping: " + biomeName);
-        Biome biome = Registries.BIOME.get(id);
-        if (!id.equals(Registries.BIOME.getId(biome))) {
+        Registry<Biome> registry = MinecraftClient.getInstance().world.getRegistryManager().get(RegistryKeys.BIOME);
+        Biome biome = registry.get(id);
+        if (biome == null || !id.equals(registry.getId(biome))) {
             throw new IllegalStateException("Missing biome from source LOD data: " + id
                     + " (install the matching content mod before importing)");
         }
-        RegistryEntry<Biome> entry = Registries.BIOME.getEntry(biome);
+        RegistryEntry<Biome> entry = registry.getEntry(biome);
         Method method = Arrays.stream(mapper.getClass().getMethods())
                 .filter(m -> m.getName().equals("getIdForBiome") && m.getParameterCount() == 1)
                 .findFirst().orElseThrow(() -> new NoSuchMethodException("Voxy Mapper.getIdForBiome"));
