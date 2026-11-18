@@ -1,6 +1,7 @@
 package dev.gofur12.lodconverter;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import dev.gofur12.lodconverter.dh.DhOverworldImporter;
 import dev.gofur12.lodconverter.inspect.DhDatabaseInspector;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -27,6 +28,21 @@ public final class LodConverterClient implements ClientModInitializer {
                             } catch (Exception exception) {
                                 context.getSource().sendError(Text.literal(
                                     "DH database inspection failed: " + exception.getMessage()));
+                                return 0;
+                            }
+                        })))
+                .then(literal("import")
+                    .then(argument("database", StringArgumentType.greedyString())
+                        .executes(context -> {
+                            String rawPath = StringArgumentType.getString(context, "database");
+                            try {
+                                DhOverworldImporter.start(Path.of(rawPath));
+                                context.getSource().sendFeedback(Text.literal(
+                                    "DH V2 Overworld import started. Keep the world open until it finishes."));
+                                return 1;
+                            } catch (Exception exception) {
+                                context.getSource().sendError(Text.literal(
+                                    "Could not start DH import: " + exception.getMessage()));
                                 return 0;
                             }
                         })))
