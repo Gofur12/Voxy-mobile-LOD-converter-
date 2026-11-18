@@ -1,6 +1,5 @@
 package dev.gofur12.lodconverter.dh;
 
-import com.github.luben.zstd.Zstd;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -15,16 +14,52 @@ public final class DhV2Codec {
     public record Mapping(String biome, String blockState) {}
 
     public static byte[] decompress(byte[] compressed) throws IOException {
-        long size = Zstd.decompressedSize(compressed);
-        if (size <= 0 || size > 256L * 1024 * 1024) {
-            throw new IOException("Invalid/unknown Zstandard frame size: " + size);
+        IOException jniFailure;
+        try {
+            Class<?> zstd = Class.forName("com.github.luben.zstd.Zstd");
+            long size = ((Number) zstd.getMethod("decompressedSize", byte[].class).invoke(null, (Object) compressed)).longValue();
+            if (size <= 0 || size > 256L * 1024 * 1024) {
+                throw new IOException("Invalid/unknown Zstandard frame size: " + size);
+            }
+            byte[] out = new byte[(int) size];
+            long actual = ((Number) zstd.getMethod("decompress", byte[].class, byte[].class)
+                    .invoke(null, out, compressed)).longValue();
+            boolean error = (Boolean) zstd.getMethod("isError", long.class).invoke(null, actual);
+            if (error || actual != size) {
+                String reason = String.valueOf(zstd.getMethod("getErrorName", long.class).invoke(null, actual));
+                throw new IOException("Zstandard JNI decompression failed: " + reason);
+            }
+            return out;
+        } catch (Throwable failure) {
+            jniFailure = new IOException("zstd-jni unavailable on this runtime", failure);
         }
-        byte[] out = new byte[(int) size];
-        long actual = Zstd.decompress(out, compressed);
-        if (Zstd.isError(actual) || actual != size) {
-            throw new IOException("Zstandard decompression failed: " + Zstd.getErrorName(actual));
+
+        try {
+            Class<?> zstd = Class.forName("org.lwjgl.util.zstd.Zstd");
+            java.nio.ByteBuffer source = java.nio.ByteBuffer.allocateDirect(compressed.length);
+            source.put(compressed).flip();
+            long size = ((Number) zstd.getMethod("ZSTD_getFrameContentSize", java.nio.ByteBuffer.class)
+                    .invoke(null, source)).longValue();
+            if (size <= 0 || size > 256L * 1024 * 1024) {
+                throw new IOException("Invalid/unknown Zstandard frame size from LWJGL: " + size);
+            }
+            java.nio.ByteBuffer destination = java.nio.ByteBuffer.allocateDirect((int) size);
+            long actual = ((Number) zstd.getMethod("ZSTD_decompress", java.nio.ByteBuffer.class, java.nio.ByteBuffer.class)
+                    .invoke(null, destination, source)).longValue();
+            boolean error = (Boolean) zstd.getMethod("ZSTD_isError", long.class).invoke(null, actual);
+            if (error || actual != size) {
+                String reason = String.valueOf(zstd.getMethod("ZSTD_getErrorName", long.class).invoke(null, actual));
+                throw new IOException("LWJGL Zstandard decompression failed: " + reason);
+            }
+            destination.flip();
+            byte[] out = new byte[(int) size];
+            destination.get(out);
+            return out;
+        } catch (Throwable failure) {
+            IOException error = new IOException("No compatible Zstandard decoder is available (zstd-jni and LWJGL fallback failed)", failure);
+            error.addSuppressed(jniFailure);
+            throw error;
         }
-        return out;
     }
 
     public static List<Mapping> readMapping(byte[] compressed) throws IOException {
