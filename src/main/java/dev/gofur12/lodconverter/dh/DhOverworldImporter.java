@@ -36,6 +36,8 @@ public final class DhOverworldImporter {
         var world = client.world;
         if (world == null) throw new IllegalStateException("Join the target world before importing");
         VoxyBridge voxy = VoxyBridge.currentWorld();
+        voxy.acquireRef();
+        try {
         int bottomY = world.getBottomY();
         int height = world.getHeight();
         int sectionCount = (height + 15) >> 4;
@@ -109,6 +111,9 @@ public final class DhOverworldImporter {
             }
             MinecraftClient.getInstance().execute(() -> client.inGameHud.getChatHud()
                     .addMessage(Text.literal("[DH Converter] Import complete: " + total + " DH rows processed.")));
+        }
+        } finally {
+            voxy.releaseRef();
         }
     }
 }
