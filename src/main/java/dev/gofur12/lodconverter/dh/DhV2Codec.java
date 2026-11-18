@@ -90,7 +90,7 @@ public final class DhV2Codec {
                 int index = x * WIDTH + z;
                 indexes[at++] = index;
                 int count = c.varInt();
-                if (count < 0 || count > 65536) throw new IOException("Invalid column run count: " + count);
+                if (count < 0 || count > 4096) throw new IOException("Invalid column run count: " + count);
                 target[index] = new ArrayList<>(count);
                 for (int j = 0; j < count; j++) target[index].add(new Point(0, 0, 0, 0));
             }
