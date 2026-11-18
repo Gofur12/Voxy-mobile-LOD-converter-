@@ -35,6 +35,26 @@ public final class DhV2Codec {
         }
 
         try {
+            // Pure-Java fallback: unlike zstd-jni/LWJGL this does not require
+            // an Android-compatible native Zstd library to be loaded.
+            Class<?> decoderClass = Class.forName("io.airlift.compress.zstd.ZstdDecompressor");
+            long size = ((Number) decoderClass.getMethod("getDecompressedSize", byte[].class, int.class, int.class)
+                    .invoke(null, compressed, 0, compressed.length)).longValue();
+            if (size <= 0 || size > 256L * 1024 * 1024) {
+                throw new IOException("Invalid/unknown Zstandard frame size from pure-Java decoder: " + size);
+            }
+            byte[] out = new byte[(int) size];
+            Object decoder = decoderClass.getConstructor().newInstance();
+            int actual = ((Number) decoderClass.getMethod("decompress",
+                    byte[].class, int.class, int.class, byte[].class, int.class, int.class)
+                    .invoke(decoder, compressed, 0, compressed.length, out, 0, out.length)).intValue();
+            if (actual != size) throw new IOException("Pure-Java Zstandard decompression returned " + actual + " bytes; expected " + size);
+            return out;
+        } catch (Throwable pureJavaFailure) {
+            // Continue to LWJGL if the Java fallback is unavailable on this runtime.
+        }
+
+        try {
             Class<?> zstd = Class.forName("org.lwjgl.util.zstd.Zstd");
             java.nio.ByteBuffer source = java.nio.ByteBuffer.allocateDirect(compressed.length);
             source.put(compressed).flip();
@@ -56,7 +76,7 @@ public final class DhV2Codec {
             destination.get(out);
             return out;
         } catch (Throwable failure) {
-            IOException error = new IOException("No compatible Zstandard decoder is available (zstd-jni and LWJGL fallback failed)", failure);
+            IOException error = new IOException("No compatible Zstandard decoder is available (zstd-jni, pure-Java, and LWJGL fallbacks failed)", failure);
             error.addSuppressed(jniFailure);
             throw error;
         }
