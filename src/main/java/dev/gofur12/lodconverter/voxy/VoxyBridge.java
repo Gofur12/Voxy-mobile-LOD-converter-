@@ -114,6 +114,14 @@ public final class VoxyBridge {
         return method.invoke(null, args);
     }
 
+    public void acquireRef() throws Exception {
+        engine.getClass().getMethod("acquireRef").invoke(engine);
+    }
+
+    public void releaseRef() throws Exception {
+        engine.getClass().getMethod("releaseRef").invoke(engine);
+    }
+
     public static long mapping(int light, int blockId, int biomeId) {
         return ((long) light & 0xffL) << 56 | ((long) biomeId & 0x1ffL) << 47 | ((long) blockId & 0xfffffL) << 27;
     }
