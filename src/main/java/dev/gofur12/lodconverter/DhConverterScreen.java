@@ -45,6 +45,8 @@ public final class DhConverterScreen extends Screen {
             directory = Files.isDirectory(androidStorage) ? androidStorage : gameDir;
         }
 
+        if (entries.isEmpty()) refreshEntries();
+
         pathField = new TextFieldWidget(textRenderer, left, top, panelWidth, 20, Text.literal("Folder"));
         pathField.setMaxLength(512);
         pathField.setText(directory.toString());
@@ -118,7 +120,6 @@ public final class DhConverterScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("Tutup"), button -> close())
             .dimensions(left, actionTop + 27, panelWidth, 20).build());
 
-        if (entries.isEmpty()) refreshEntries();
     }
 
     private void refreshEntries() {
