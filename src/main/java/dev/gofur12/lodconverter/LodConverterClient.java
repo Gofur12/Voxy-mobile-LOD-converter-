@@ -7,6 +7,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.gui.screen.option.VideoOptionsScreen;
+import dev.gofur12.lodconverter.mixin.ScreenAccessor;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
@@ -25,7 +26,7 @@ public final class LodConverterClient implements ClientModInitializer {
                 int buttonWidth = Math.min(190, scaledWidth - 12);
                 int x = (scaledWidth - buttonWidth) / 2;
                 int y = Math.max(4, scaledHeight - 54);
-                screen.addDrawableChild(ButtonWidget.builder(
+                ((ScreenAccessor) screen).voxyLodConverter$addDrawableChild(ButtonWidget.builder(
                     Text.literal("Voxy LOD Converter"),
                     button -> client.setScreen(new DhConverterScreen(screen))
                 ).dimensions(x, y, buttonWidth, 20).build());
