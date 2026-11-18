@@ -55,8 +55,12 @@ public final class VoxyBridge {
 
     public int biomeId(String biomeName) throws Exception {
         Identifier id = Identifier.tryParse(biomeName);
-        Biome biome = id == null ? null : Registries.BIOME.get(id);
-        if (biome == null) biome = Registries.BIOME.get(new Identifier("minecraft", "plains"));
+        if (id == null) throw new IllegalArgumentException("Invalid biome identifier in DH mapping: " + biomeName);
+        Biome biome = Registries.BIOME.get(id);
+        if (!id.equals(Registries.BIOME.getId(biome))) {
+            throw new IllegalStateException("Missing biome from source LOD data: " + id
+                    + " (install the matching content mod before importing)");
+        }
         RegistryEntry<Biome> entry = Registries.BIOME.getEntry(biome);
         Method method = Arrays.stream(mapper.getClass().getMethods())
                 .filter(m -> m.getName().equals("getIdForBiome") && m.getParameterCount() == 1)
@@ -70,7 +74,7 @@ public final class VoxyBridge {
         int marker = serial.indexOf("_STATE_");
         String blockName = marker < 0 ? serial : serial.substring(0, marker);
         Identifier blockIdentifier = Identifier.tryParse(blockName);
-        if (blockIdentifier == null) return net.minecraft.block.Blocks.AIR.getDefaultState();
+        if (blockIdentifier == null) throw new IllegalArgumentException("Invalid block identifier in DH mapping: " + blockName);
         Block block = Registries.BLOCK.get(blockIdentifier);
         if (!blockIdentifier.equals(Registries.BLOCK.getId(block))) {
             throw new IllegalStateException("Missing block from source LOD data: " + blockIdentifier
