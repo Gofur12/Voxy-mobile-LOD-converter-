@@ -5,7 +5,12 @@ import dev.gofur12.lodconverter.dh.DhOverworldImporter;
 import dev.gofur12.lodconverter.inspect.DhDatabaseInspector;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.text.Text;
+import net.minecraft.client.util.InputUtil;
+import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
 
@@ -13,8 +18,22 @@ import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.arg
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 public final class LodConverterClient implements ClientModInitializer {
+    private static KeyBinding openScreenKey;
+
     @Override
     public void onInitializeClient() {
+        openScreenKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+            "key.voxy_mobile_lod_converter.open",
+            InputUtil.Type.KEYSYM,
+            GLFW.GLFW_KEY_K,
+            "category.voxy_mobile_lod_converter"
+        ));
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (openScreenKey.wasPressed()) {
+                client.setScreen(new DhConverterScreen(client.currentScreen));
+            }
+        });
+
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
             dispatcher.register(literal("dhconvert")
                 .then(literal("inspect")
