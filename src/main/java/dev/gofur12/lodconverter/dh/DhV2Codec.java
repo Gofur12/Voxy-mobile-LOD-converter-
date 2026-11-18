@@ -111,7 +111,7 @@ public final class DhV2Codec {
             for (int j = 0; j < column.size(); j++) {
                 Point p = column.get(j);
                 int height = c.varInt();
-                if (height < 0 || height > 4095) throw new IOException("Invalid point height: " + height);
+                if (height <= 0 || height > 4095) throw new IOException("Invalid point height: " + height);
                 column.set(j, new Point(p.mappingId(), height, 0, 0));
             }
         }
@@ -154,6 +154,9 @@ public final class DhV2Codec {
             int value = 0;
             for (int shift = 0; shift < 35; shift += 7) {
                 int b = byteValue();
+                // A non-negative Java int VarInt may use only 3 payload bits
+                // in byte five. Reject overflow instead of silently wrapping.
+                if (shift == 28 && (b & 0xf8) != 0) throw new IOException("DH VarInt exceeds signed 32-bit range");
                 value |= (b & 0x7f) << shift;
                 if ((b & 0x80) == 0) {
                     if (value < 0) throw new IOException("Negative DH VarInt");
