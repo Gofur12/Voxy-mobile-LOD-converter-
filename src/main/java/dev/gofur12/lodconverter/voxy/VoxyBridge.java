@@ -102,7 +102,12 @@ public final class VoxyBridge {
     }
 
     private static <T extends Comparable<T>> BlockState applyProperty(BlockState state, Property<T> property, String value) {
+        // DH serializes enum-backed block-state values using Java enum names
+        // (for example SINGLE), while Minecraft's Property parser expects the
+        // StringIdentifiable form (for example single). Try the original first
+        // for numeric/boolean/custom properties, then the canonical lowercase form.
         Optional<T> parsed = property.parse(value);
+        if (parsed.isEmpty()) parsed = property.parse(value.toLowerCase(Locale.ROOT));
         if (parsed.isEmpty()) throw new IllegalArgumentException("Invalid value for block-state property "
                 + property.getName() + ": " + value);
         return state.with(property, parsed.get());
